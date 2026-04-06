@@ -107,7 +107,7 @@ def ler_transacao_id(transacao_id: int, db: Session = Depends(get_db)):
         return {"error": "Transação não encontrada"}
     return transacao
 
-@app.post("/transacoes/", response_model=TransacoesResponse)
+@app.post("/transacao/", response_model=TransacoesResponse)
 def criar_transacao(transacao: TransacoesCreate, db: Session = Depends(get_db)):
     db_transacao = Transacoes(**transacao.model_dump())
     db.add(db_transacao)
