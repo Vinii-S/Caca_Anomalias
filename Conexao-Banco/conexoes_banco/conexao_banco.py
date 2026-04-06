@@ -1,5 +1,6 @@
 from datetime import date, time
 import os
+from typing import Optional
 from sqlalchemy import Boolean, create_engine, Column, Integer, String, Float, Date, Time
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -67,6 +68,26 @@ class TransacoesResponse(BaseModel):
     ip_origem: str
     is_fraude: bool
 
+class TransacoesCreate(BaseModel):
+    valor: float
+    data: date
+    hora: time
+    dia_semana: str
+    categoria: str
+    conta: str
+    cidade: str
+    estado: str
+    pais: str
+    latitude: str
+    longitude: str
+    tipo_transacao: str
+    dispositivo: str
+    estabelecimento: str
+    tentativas: int
+    ip_origem: str
+    is_fraude: bool
+    
+    
 def popular_banco_se_vazio():
     db = SessionLocal()
     quantidade = db.query(Transacoes).count()
@@ -79,7 +100,42 @@ def popular_banco_se_vazio():
 
 popular_banco_se_vazio()
 
+@app.get("/transacoes/{transacao_id}", response_model=TransacoesResponse)
+def ler_transacao_id(transacao_id: int, db: Session = Depends(get_db)):
+    transacao = db.query(Transacoes).filter(Transacoes.id == transacao_id).first()
+    if transacao is None:
+        return {"error": "Transação não encontrada"}
+    return transacao
+
+@app.post("/transacoes/", response_model=TransacoesResponse)
+def criar_transacao(transacao: TransacoesCreate, db: Session = Depends(get_db)):
+    db_transacao = Transacoes(**transacao.model_dump())
+    db.add(db_transacao)
+    db.commit()
+    db.refresh(db_transacao)
+    return db_transacao
+
 @app.get("/transacoes", response_model=list[TransacoesResponse])
-def ler_transacoes(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    transacoes = db.query(Transacoes).offset(skip).limit(limit).all()
+def ler_transacoes(skip: int = 0, limit: int = 10, categoria: Optional [str] = None, conta: Optional[str] = None, cidade: Optional[str] = None, tipo_transacao: Optional[str] = None, valor_minimo: Optional[float] = None, valor_maximo: Optional[float] = None, db: Session = Depends(get_db)):
+    query = db.query(Transacoes)
+    
+    if categoria:
+        query = query.filter(Transacoes.categoria == categoria)
+        
+    if conta:
+        query = query.filter(Transacoes.conta == conta)
+
+    if cidade:
+        query = query.filter(Transacoes.cidade == cidade)
+
+    if tipo_transacao:
+        query = query.filter(Transacoes.tipo_transacao == tipo_transacao)
+
+    if valor_minimo is not None:
+        query = query.filter(Transacoes.valor >= valor_minimo)
+
+    if valor_maximo is not None:
+        query = query.filter(Transacoes.valor <= valor_maximo)
+
+    transacoes = query.offset(skip).limit(limit).all()
     return transacoes
