@@ -38,6 +38,7 @@ class Transacoes(Base):
     tentativas = Column(Integer, index=True, nullable=False)
     ip_origem = Column(String, index=True, nullable=False)
     is_fraude = Column(Boolean, index=True, nullable=False)
+    verifica_fraude = Column(Boolean, index=True)
 	
 Base.metadata.create_all(bind=engine)
 
@@ -67,7 +68,7 @@ class TransacoesResponse(BaseModel):
     tentativas: int
     ip_origem: str
     is_fraude: bool
-
+    verifica_fraude: Optional[bool] = None
 class TransacoesCreate(BaseModel):
     valor: float
     data: date
@@ -86,7 +87,7 @@ class TransacoesCreate(BaseModel):
     tentativas: int
     ip_origem: str
     is_fraude: bool
-    
+    verifica_fraude: Optional[bool] = None
     
 def popular_banco_se_vazio():
     db = SessionLocal()
