@@ -81,6 +81,3 @@ A API estará disponível no endereço: [http://127.0.0.1:8000](http://127.0.0.1
 
 Você pode acessar a documentação automática (Swagger UI) fornecida pelo FastAPI acessando: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
-## 📄 Licença
-
-Consulte o arquivo `LICENSE` para obter detalhes sobre a licença aplicada a este projeto.
