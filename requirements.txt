@@ -1,0 +1,4 @@
+1. Criar ambiente .venv (Executar ambiente .venv no terminal, vá na pasta .venv/Scripts/activate.fish ou activate.bat ou Activate.ps1, tudo isso através do terminal) 
+2. Instalar todas as dependencias: "pip install fastapi pydantic sqlalchemy uvicorn pandas"
+3. Entrar na pasta Conexao-Banco/conexoes/banco .
+4. Executar o comando: "uvicorn conexao_banco:app --reload" para criação do banco e inserção dos dados do dataset
