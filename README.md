@@ -74,7 +74,7 @@ cd src
 Inicie o servidor local através do `uvicorn`. O código acerta automaticamente os caminhos e cria os dados a partir do JSON caso não existam:
 
 ```bash
-uvicorn database:app --reload
+uvicorn main:app --reload
 ```
 
 A API estará disponível no endereço: [http://127.0.0.1:8000](http://127.0.0.1:8000)
