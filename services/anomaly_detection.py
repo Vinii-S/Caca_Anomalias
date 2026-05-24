@@ -8,6 +8,44 @@ Descrição: Serviço de detecção de anomalias. Contém EXCLUSIVAMENTE a
 Autor: Squad 4
 Data: 2026
 """
+import json
+import pandas as pd
+from sklearn.ensemble import IsolationForest
+
+# =========================================================
+# TREINAMENTO DO ISOLATION FOREST
+# =========================================================
+
+with open("data/transacoes_treino.json", "r", encoding="utf-8") as arquivo:
+    dados_treino = json.load(arquivo)
+
+dados_processados = []
+
+for item in dados_treino:
+
+    try:
+        hora = int(item["hora"].split(":")[0])
+    except:
+        hora = 0
+
+    dados_processados.append({
+        "valor": item["valor"],
+        "tentativas": item["tentativas"],
+        "latitude": float(item["latitude"]),
+        "longitude": float(item["longitude"]),
+        "hora": hora
+    })
+
+df_treino = pd.DataFrame(dados_processados)
+
+modelo_iforest = IsolationForest(
+    n_estimators=100,
+    contamination=0.05,
+    random_state=42
+)
+
+modelo_iforest.fit(df_treino)
+
 
 from datetime import time as time_obj
 from sqlalchemy.orm import Session
@@ -110,10 +148,48 @@ def executar_deteccao(db: Session, transacao: Transacao) -> bool:
         )
 
     db.commit()
+    
+    # =====================================================
+    # DETECÇÃO COM ISOLATION FOREST
+    # =====================================================
+
+    try:
+
+        hora_nova = int(str(transacao.hora).split(":")[0])
+
+        dados_novos = pd.DataFrame([{
+            "valor": transacao.valor,
+            "tentativas": transacao.tentativas,
+            "latitude": float(transacao.latitude),
+            "longitude": float(transacao.longitude),
+            "hora": hora_nova
+        }])
+
+        predicao = modelo_iforest.predict(dados_novos)
+
+        score_iforest = modelo_iforest.decision_function(dados_novos)
+
+        # -1 = anomalia
+        if predicao[0] == -1:
+
+            motivos.append(
+                f"O Sistema detectou comportamento anômalo "
+                f"(score={score_iforest[0]:.4f})"
+            )
+
+            score_total += 40
+
+    except Exception as exc:
+        print("Erro no Sistema (Isolation Forest):", exc)
+        
+    print("ANOMALIA DETECTADA")
+    print(score_total)
+    print(motivos)
 
     # Se alguma regra foi acionada, registra a anomalia via repository
     if score_total > 0:
         score_final = min(score_total, 100)
+        print("SALVANDO ANOMALIA NO BANCO")
         db_criar_anomalia(
             db=db,
             id_transacao=transacao.id_transacao,
