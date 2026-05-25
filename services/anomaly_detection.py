@@ -181,15 +181,10 @@ def executar_deteccao(db: Session, transacao: Transacao) -> bool:
 
     except Exception as exc:
         print("Erro no Sistema (Isolation Forest):", exc)
-        
-    print("ANOMALIA DETECTADA")
-    print(score_total)
-    print(motivos)
 
     # Se alguma regra foi acionada, registra a anomalia via repository
     if score_total > 0:
         score_final = min(score_total, 100)
-        print("SALVANDO ANOMALIA NO BANCO")
         db_criar_anomalia(
             db=db,
             id_transacao=transacao.id_transacao,
