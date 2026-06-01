@@ -9,6 +9,7 @@ Autor: Squad 4
 Data: 2026
 """
 
+from typing import Optional
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
@@ -25,8 +26,13 @@ router = APIRouter(tags=["Anomalias e Regras"])
     response_model=list[AnomaliaResponse],
     summary="RF03 — Consultar Anomalias Detectadas"
 )
-def listar(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return listar_anomalias(db=db, skip=skip, limit=limit)
+def listar(
+    skip: int = 0,
+    limit: int = 100,
+    id_transacao: Optional[int] = None,
+    db: Session = Depends(get_db)
+):
+    return listar_anomalias(db=db, skip=skip, limit=limit, id_transacao=id_transacao)
 
 
 @router.get(
