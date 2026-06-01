@@ -117,10 +117,12 @@ def db_criar_anomalia(
 
 
 def db_listar_anomalias(
-    db: Session, skip: int = 0, limit: int = 100, id_transacao: Optional[int] = None
+    db: Session, skip: int = 0, limit: int = 100, id_transacao: Optional[int] = None, tipo_transacao: Optional[str] = None
 ) -> list[Anomalia]:
     """Lista anomalias registradas."""
     query = db.query(Anomalia)
+    if tipo_transacao is not None:
+        query = query.join(Transacao).filter(Transacao.tipo_transacao == tipo_transacao)
     if id_transacao is not None:
         query = query.filter(Anomalia.id_transacao == id_transacao)
     return query.offset(skip).limit(limit).all()

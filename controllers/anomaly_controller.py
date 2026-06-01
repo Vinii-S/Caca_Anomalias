@@ -30,9 +30,10 @@ def listar(
     skip: int = 0,
     limit: int = 100,
     id_transacao: Optional[int] = None,
+    tipo_transacao: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
-    return listar_anomalias(db=db, skip=skip, limit=limit, id_transacao=id_transacao)
+    return listar_anomalias(db=db, skip=skip, limit=limit, id_transacao=id_transacao, tipo_transacao=tipo_transacao)
 
 
 @router.get(

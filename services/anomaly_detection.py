@@ -198,6 +198,6 @@ def executar_deteccao(db: Session, transacao: Transacao) -> bool:
     return False
 
 
-def listar_anomalias(db: Session, skip: int = 0, limit: int = 100, id_transacao: Optional[int] = None):
+def listar_anomalias(db: Session, skip: int = 0, limit: int = 100, id_transacao: Optional[int] = None, tipo_transacao: Optional[str] = None):
     """Delega listagem de anomalias ao repository."""
-    return db_listar_anomalias(db=db, skip=skip, limit=limit, id_transacao=id_transacao)
+    return db_listar_anomalias(db=db, skip=skip, limit=limit, id_transacao=id_transacao, tipo_transacao=tipo_transacao)
