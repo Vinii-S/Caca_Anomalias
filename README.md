@@ -63,13 +63,7 @@ Com o ambiente virtual ativado, instale as bibliotecas requeridas pelo projeto:
 pip install -r requirements.txt
 ```
 
-### 4. Criação do Banco e Inserção dos Dados
-
-Navegue até a pasta `src` onde está localizado o script principal do servidor:
-
-```bash
-cd src
-```
+### 4. Iniciando aplicação
 
 Inicie o servidor local através do `uvicorn`. O código acerta automaticamente os caminhos e cria os dados a partir do JSON caso não existam:
 
