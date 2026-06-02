@@ -11,10 +11,39 @@ Data: 2026
 import json
 import pandas as pd
 from sklearn.ensemble import IsolationForest
+from core.config import (
+    LIMIAR_HORA_FIM,
+    LIMIAR_HORA_INICIO,
+    LIMIAR_MEDIA,
+    LIMIAR_TENTATIVAS,
+    LIMIAR_VALOR_NOTURNO,
+    PESOS_REGRA,
+
+    PESO_VALOR,
+    PESO_TENTATIVAS,
+    PESO_HORA,
+    PESO_LOCALIZACAO,
+    PESO_VALOR_RELATIVO,
+    PESO_DISPOSITIVO
+)
 
 # =========================================================
 # TREINAMENTO DO ISOLATION FOREST
 # =========================================================
+
+def converter_dispositivo(dispositivo):
+    """
+    Converte dispositivo textual para valor numérico.
+    O Isolation Forest só trabalha com números.
+    """
+
+    mapa = {
+        "app_mobile": 1,
+        "web": 2,
+        "caixa_eletronico": 3
+    }
+
+    return mapa.get(dispositivo, 0)
 
 with open("data/transacoes_treino.json", "r", encoding="utf-8") as arquivo:
     dados_treino = json.load(arquivo)
@@ -29,18 +58,29 @@ for item in dados_treino:
         hora = 0
 
     dados_processados.append({
-        "valor": item["valor"],
-        "tentativas": item["tentativas"],
-        "latitude": float(item["latitude"]),
-        "longitude": float(item["longitude"]),
-        "hora": hora
+        "valor":
+            item["valor"] * PESO_VALOR,
+        "tentativas":
+            item["tentativas"] * PESO_TENTATIVAS,
+        "latitude":
+            float(item["latitude"]) * PESO_LOCALIZACAO,
+        "longitude":
+            float(item["longitude"]) * PESO_LOCALIZACAO,
+        "hora":
+            hora * PESO_HORA,
+        "dispositivo":
+            converter_dispositivo(
+                item.get("dispositivo")
+            ) * PESO_DISPOSITIVO
     })
 
 df_treino = pd.DataFrame(dados_processados)
 
 modelo_iforest = IsolationForest(
-    n_estimators=100,
-    contamination=0.05,
+    n_estimators=150,
+    contamination=0.03,
+    max_samples="auto",
+    bootstrap=False,
     random_state=42
 )
 
@@ -50,12 +90,6 @@ modelo_iforest.fit(df_treino)
 from datetime import time as time_obj
 from typing import Optional
 from sqlalchemy.orm import Session
-
-from core.config import (
-    LIMIAR_HORA_FIM, LIMIAR_HORA_INICIO,
-    LIMIAR_MEDIA, LIMIAR_TENTATIVAS,
-    LIMIAR_VALOR_NOTURNO, PESOS_REGRA,
-)
 from models.models import Transacao
 from repositories.data_repository import (
     db_criar_anomalia,
@@ -159,32 +193,60 @@ def executar_deteccao(db: Session, transacao: Transacao) -> bool:
         hora_nova = int(str(transacao.hora).split(":")[0])
 
         dados_novos = pd.DataFrame([{
-            "valor": transacao.valor,
-            "tentativas": transacao.tentativas,
-            "latitude": float(transacao.latitude),
-            "longitude": float(transacao.longitude),
-            "hora": hora_nova
+
+            "valor":
+                transacao.valor * PESO_VALOR,
+
+            "tentativas":
+                transacao.tentativas * PESO_TENTATIVAS,
+
+            "latitude":
+                float(transacao.latitude) * PESO_LOCALIZACAO,
+
+            "longitude":
+                float(transacao.longitude) * PESO_LOCALIZACAO,
+
+            "hora":
+                hora_nova * PESO_HORA,
+
+            "dispositivo":
+                converter_dispositivo(
+                    transacao.dispositivo
+                ) * PESO_DISPOSITIVO
         }])
 
         predicao = modelo_iforest.predict(dados_novos)
+        print("\nDADOS ENVIADOS AO ISOLATION (DADOS COM PESO):")
+        print(f'\n{dados_novos}')
 
         score_iforest = modelo_iforest.decision_function(dados_novos)
+        print("\n====================================")
+        print("ISOLATION FOREST")
+        print("====================================")
+        print(f"Predição: {predicao[0]}")
+        print(f"Score do Isolation Forest: {score_iforest[0]:.4f}")
+        print("====================================")
 
         # -1 = anomalia
         if predicao[0] == -1:
-
+            print("\n🚨 ANOMALIA DETECTADA PELO ISOLATION FOREST 🚨\n")
             motivos.append(
                 f"O Sistema detectou comportamento anômalo "
                 f"(score={score_iforest[0]:.4f})"
             )
-
-            score_total += 40
+            score_total += 40  # Peso fixo para anomalia detectada pelo modelo
+        else:
+            print("✅ TRANSAÇÃO NORMAL")
 
     except Exception as exc:
-        print("Erro no Sistema (Isolation Forest):", exc)
+        print("Erro no Sistema:", exc)
 
     # Se alguma regra foi acionada, registra a anomalia via repository
+    print(f"\nSCORE TOTAL FINAL (VEM DAS REGRAS DE NEGÓCIO) = {score_total}")
+    print("\n")
+    print(f"\nMOTIVOS = {motivos}")
     if score_total > 0:
+
         score_final = min(score_total, 100)
         db_criar_anomalia(
             db=db,
@@ -193,6 +255,9 @@ def executar_deteccao(db: Session, transacao: Transacao) -> bool:
             classificacao=_classificar_risco(score_final),
             motivo=" | ".join(motivos)
         )
+        print("\n====================================")
+        print("ANOMALIA SALVA NO BANCO DE DADOS")
+        print("\n====================================")
         return True
 
     return False

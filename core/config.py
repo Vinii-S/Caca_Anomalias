@@ -38,6 +38,17 @@ PESOS_REGRA = {
 }
 
 # ---------------------------------------------------------------------------
+# Pesos utilizados pelo Isolation Forest
+# ---------------------------------------------------------------------------
+
+PESO_VALOR = 1.0
+PESO_TENTATIVAS = 2.0
+PESO_HORA = 1.5
+PESO_LOCALIZACAO = 1.0
+PESO_VALOR_RELATIVO = 3.0
+PESO_DISPOSITIVO = 1.5
+
+# ---------------------------------------------------------------------------
 # Regras padrão inseridas no banco na primeira execução
 # ---------------------------------------------------------------------------
 REGRAS_PADRAO = [
