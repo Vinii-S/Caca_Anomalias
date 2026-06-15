@@ -4,3 +4,6 @@ sqlalchemy
 uvicorn
 pandas
 scikit-learn
+streamlit
+plotly
+requests
