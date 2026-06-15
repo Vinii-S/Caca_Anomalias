@@ -90,6 +90,53 @@ def resumir_motivo_alerta(motivo):
     return " + ".join(rotulos) if rotulos else "Alerta de Auditoria"
 
 
+def extrair_categorias_individuais(motivo) -> list[str]:
+    """Separa cada regra acionada — evita combinações ilegíveis no gráfico."""
+    if motivo is None or (isinstance(motivo, float) and pd.isna(motivo)):
+        return []
+
+    texto = str(motivo).lower()
+    categorias = []
+
+    if "noturna" in texto or "horário" in texto or "horario" in texto:
+        categorias.append("Horário Suspeito")
+    if "tentativas" in texto:
+        categorias.append("Múltiplas Tentativas")
+    if "atípico" in texto or "atipico" in texto or "excede" in texto or "média" in texto or "media" in texto:
+        categorias.append("Valor Atípico")
+    if "anômalo" in texto or "anomalo" in texto or "isolation" in texto:
+        categorias.append("Padrão de Risco IA")
+
+    return categorias if categorias else ["Alerta de Auditoria"]
+
+
+CORES_MOTIVO = {
+    "Horário Suspeito": "#0038A8",
+    "Múltiplas Tentativas": "#991B1B",
+    "Valor Atípico": "#FCE205",
+    "Padrão de Risco IA": "#4B5563",
+    "Alerta de Auditoria": "#6B7280",
+}
+
+
+def preparar_distribuicao_alertas(df_alertas: pd.DataFrame) -> pd.DataFrame:
+    """Conta cada tipo de regra separadamente (um alerta pode entrar em mais de uma barra)."""
+    registros = []
+    for motivo in df_alertas["motivo_real"]:
+        for categoria in extrair_categorias_individuais(motivo):
+            registros.append({"categoria": categoria})
+
+    if not registros:
+        return pd.DataFrame(columns=["categoria", "quantidade"])
+
+    contagem = (
+        pd.DataFrame(registros)
+        .value_counts("categoria")
+        .reset_index(name="quantidade")
+    )
+    return contagem.sort_values("quantidade", ascending=True)
+
+
 def montar_params_transacoes(filtros: dict | None = None) -> dict:
     params = {"limit": 5000}
     if not filtros:
@@ -247,7 +294,7 @@ def exibir_resultado_validacao(anomalia: dict | None):
         )
 
 
-st.title("🏦 Sistema de Prevenção a Fraudes")
+st.title("🏦 CAÇA ANOMALIAS")
 st.markdown("### Painel Executivo de Auditoria e Análise de Anomalias")
 st.divider()
 
@@ -473,20 +520,71 @@ try:
 
             col_grafico1, col_grafico2 = st.columns(2)
             with col_grafico1:
+                df_distribuicao = preparar_distribuicao_alertas(df_motivos)
+                total_ocorrencias = int(df_distribuicao["quantidade"].sum())
+
                 fig_motivos = px.pie(
-                    df_motivos, names="motivo_alerta",
+                    df_distribuicao,
+                    names="categoria",
+                    values="quantidade",
                     title="Distribuição por Natureza de Alerta",
-                    hole=0.4, color_discrete_sequence=CORES_BB,
+                    hole=0.4,
+                    color="categoria",
+                    color_discrete_map=CORES_MOTIVO,
                 )
-                fig_motivos.update_traces(textposition="inside", textinfo="percent+label")
+                fig_motivos.update_traces(
+                    texttemplate="%{label}<br>%{value} (%{percent})",
+                    textposition="outside",
+                    textinfo="none",
+                    outsidetextfont=dict(size=12),
+                    hovertemplate=(
+                        "<b>%{label}</b><br>"
+                        "Quantidade: %{value}<br>"
+                        "Participação: %{percent}<extra></extra>"
+                    ),
+                    pull=[0.03] * len(df_distribuicao),
+                )
+                fig_motivos.update_layout(
+                    plot_bgcolor="white",
+                    height=400,
+                    margin=dict(l=20, r=160, t=50, b=20),
+                    showlegend=True,
+                    legend=dict(
+                        title="Tipos de regra",
+                        orientation="v",
+                        yanchor="middle",
+                        y=0.5,
+                        xanchor="left",
+                        x=1.02,
+                        font=dict(size=12),
+                    ),
+                )
+                st.caption(
+                    f"**{total_ocorrencias}** ocorrências de regras em **{total_alertas_filtrados}** alertas. "
+                    "Um alerta pode acionar mais de uma regra."
+                )
                 st.plotly_chart(fig_motivos, use_container_width=True)
             with col_grafico2:
+                df_canal_alertas = (
+                    df_motivos.groupby("tipo_transacao", as_index=False)
+                    .size()
+                    .rename(columns={"size": "quantidade"})
+                    .sort_values("quantidade", ascending=False)
+                )
                 fig_tipos = px.bar(
-                    df_motivos, x="tipo_transacao",
+                    df_canal_alertas,
+                    x="tipo_transacao",
+                    y="quantidade",
                     title="Volumetria de Alertas por Canal de Pagamento",
                     color_discrete_sequence=["#0038A8"],
+                    text="quantidade",
                 )
-                fig_tipos.update_layout(plot_bgcolor="white")
+                fig_tipos.update_layout(
+                    plot_bgcolor="white",
+                    xaxis_title="Canal de pagamento",
+                    yaxis_title="Quantidade de alertas",
+                )
+                fig_tipos.update_traces(textposition="outside")
                 st.plotly_chart(fig_tipos, use_container_width=True)
 
             st.write("#### 🗺️ Mapa Geográfico de Alertas")
