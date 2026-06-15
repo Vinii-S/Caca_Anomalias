@@ -18,15 +18,31 @@ O projeto faz uso das seguintes bibliotecas e ferramentas:
 Caca_Anomalias/
 ├── .venv/                         # Ambiente virtual (gerado localmente)
 ├── data/                          # Diretório de armazenamento de fontes de dados
-│   └── transacoes_treino.json     # Dados JSON usados para treinamento
-├── src/                           # Código fonte / regras de negócio principal
-│   ├── __init__.py 
-│   ├── database.py                # Ponto de entrada (API FastAPI) e manipulação do banco
-│   └── transacoes_db.db           # Banco de dados SQLite gerado automaticamente
+│   └── transacoes_treino.json     # Dados JSON usados para treinamento e população inicial
+├── core/                          # Configurações globais e de infraestrutura
+│   ├── config.py                  # Carregamento de variáveis de ambiente e chaves (ex: Gemini)
+│   └── database.py                # Configuração do motor do SQLAlchemy e sessão do banco
+├── models/                        # Entidades de Domínio (Mapeamento ORM)
+│   └── models.py                  # Definição das tabelas (Transacao, Anomalia, RegraFraude)
+├── schemas/                       # Objetos de Transferência de Dados (DTOs)
+│   └── schemas.py                 # Validação rigorosa de entrada e saída usando Pydantic
+├── repositories/                  # Padrão Repository para isolamento do banco
+│   └── data_repository.py         # Scripts e métodos de CRUD (leitura e escrita de dados)
+├── services/                      # Regras de negócio e orquestração principal
+│   ├── anomaly_detection.py       # Motor estatístico para cálculo e detecção de fraudes
+│   ├── llm_service.py             # Integração com a IA Generativa para explicar anomalias
+│   └── transaction_service.py     # Lógica central de processamento das requisições
+├── controllers/                   # Endpoints e roteamento HTTP (API)
+│   ├── anomaly_controller.py      # Rotas de consulta e listagem de anomalias detectadas
+│   ├── llm_controller.py          # Rotas de comunicação com a inteligência artificial
+│   └── transaction_controller.py  # Rotas de recepção e submissão de novas transações
+├── main.py                        # Ponto de entrada principal e inicialização da API (FastAPI)
+├── transacoes_db.db               # Banco de dados SQLite persistente (gerado automaticamente)
 ├── LICENSE                        # Licença do projeto
-├── README.md                      # Documentação
-└── requirements.txt               # Instruções e dependências essenciais
+├── README.md                      # Documentação principal
+└── requirements.txt               # Instruções e dependências essenciais do projeto
 ```
+
 
 ## 🚀 Como Executar o Projeto Localmente
 
@@ -70,6 +86,17 @@ Inicie o servidor local através do `uvicorn`. O código acerta automaticamente 
 ```bash
 uvicorn main:app --reload
 ```
+
+### 5. Iniciando Frontend
+```bash
+stramlit run app_frontend.py
+```
+O Frontend baseado em streamlit estará disponível no endereço: http://localhost:8501/
+
+
+A API (backend) estará disponível no endereço: http://127.0.0.1:8000
+
+Você pode acessar a documentação automática (Swagger UI) fornecida pelo FastAPI acessando: http://127.0.0.1:8000/docs   
 
 A API estará disponível no endereço: [http://127.0.0.1:8000](http://127.0.0.1:8000)
 
