@@ -44,7 +44,7 @@ def criar_transacao(dados: TransacaoCreate, db: Session = Depends(get_db)):
 )
 def listar_transacoes(
     skip:           int             = 0,
-    limit:          int             = 100,
+    limit:          Optional[int]  = None,
     categoria:      Optional[str]   = None,
     conta:          Optional[str]   = None,
     cidade:         Optional[str]   = None,

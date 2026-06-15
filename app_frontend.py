@@ -20,7 +20,7 @@ st.markdown("""
     <style>
     .block-container { border-top: 10px solid #FCE205; padding-top: 1.5rem; }
     h1, h2, h3, h4, h5, h6 { color: #0038A8 !important; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    [data-testid="stMetricValue"] { color: #0038A8 !important; font-weight: bold; font-size: 2.2rem; }
+    [data-testid="stMetricValue"] { color: #0038A8 !important; font-weight: bold; font-size: 1.6rem !important; }
     [data-testid="stMetricLabel"] { color: #4B5563 !important; font-weight: 500; }
     button[data-baseweb="tab"] { color: #6B7280; font-weight: 600; }
     button[data-baseweb="tab"][aria-selected="true"] { color: #0038A8 !important; border-bottom-color: #0038A8 !important; }
@@ -138,7 +138,7 @@ def preparar_distribuicao_alertas(df_alertas: pd.DataFrame) -> pd.DataFrame:
 
 
 def montar_params_transacoes(filtros: dict | None = None) -> dict:
-    params = {"limit": 5000}
+    params = {}
     if not filtros:
         return params
     if filtros.get("conta"):
@@ -196,16 +196,17 @@ def enriquecer_com_anomalias(transacoes: list, anomalias: list) -> pd.DataFrame:
 
 @st.cache_data(ttl=60, show_spinner=False)
 def carregar_dados_cache():
-    transacoes = api_get("/transactions", {"limit": 5000})
-    anomalias = api_get("/anomalies", {"limit": 5000})
+    transacoes = api_get("/transactions")
+    anomalias = api_get("/anomalies")
     regras = api_get("/regras")
     df = enriquecer_com_anomalias(transacoes, anomalias)
     return df, pd.DataFrame(anomalias), pd.DataFrame(regras)
 
 
 def carregar_transacoes_filtradas(filtros: dict) -> pd.DataFrame:
-    transacoes = api_get("/transactions", montar_params_transacoes(filtros))
-    anomalias = api_get("/anomalies", {"limit": 5000})
+    params = montar_params_transacoes(filtros)
+    transacoes = api_get("/transactions", params)
+    anomalias = api_get("/anomalies")
     return enriquecer_com_anomalias(transacoes, anomalias)
 
 
@@ -341,6 +342,11 @@ try:
     df_alertas_sem_rotulo = df[(df["is_fraude"] == False) & (df["tem_alerta"])]
 
     # 5. Cards de métricas
+    st.markdown("### 📊 Visão Geral")
+    st.markdown(
+        '<div style="background:#f8fafc; padding:16px 20px; border-radius:16px; box-shadow:0 10px 25px rgba(0,0,0,0.06); margin-bottom:16px;">',
+        unsafe_allow_html=True,
+    )
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.metric("Volume Total Analisado", f"R$ {volume_total:,.2f}")
@@ -353,6 +359,7 @@ try:
         )
     with col4:
         st.metric("Falsos Negativos", len(df_falsos_negativos), delta="dataset vs motor", delta_color="off")
+    st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
 

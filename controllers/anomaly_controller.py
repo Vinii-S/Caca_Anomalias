@@ -28,7 +28,7 @@ router = APIRouter(tags=["Anomalias e Regras"])
 )
 def listar(
     skip: int = 0,
-    limit: int = 100,
+    limit: Optional[int] = None,
     id_transacao: Optional[int] = None,
     tipo_transacao: Optional[str] = None,
     db: Session = Depends(get_db)

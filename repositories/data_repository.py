@@ -47,7 +47,7 @@ def db_buscar_transacao_por_id(db: Session, transaction_id: int) -> Transacao:
 def db_listar_transacoes(
     db: Session,
     skip: int = 0,
-    limit: int = 100,
+    limit: Optional[int] = None,
     categoria: Optional[str] = None,
     conta: Optional[str] = None,
     cidade: Optional[str] = None,
@@ -74,7 +74,10 @@ def db_listar_transacoes(
     if is_fraude is not None:
         query = query.filter(Transacao.is_fraude == is_fraude)
 
-    return query.offset(skip).limit(limit).all()
+    query = query.offset(skip)
+    if limit is not None:
+        query = query.limit(limit)
+    return query.all()
 
 
 def db_excluir_transacao(db: Session, transaction_id: int) -> dict:
@@ -117,7 +120,7 @@ def db_criar_anomalia(
 
 
 def db_listar_anomalias(
-    db: Session, skip: int = 0, limit: int = 100, id_transacao: Optional[int] = None, tipo_transacao: Optional[str] = None
+    db: Session, skip: int = 0, limit: Optional[int] = None, id_transacao: Optional[int] = None, tipo_transacao: Optional[str] = None
 ) -> list[Anomalia]:
     """Lista anomalias registradas."""
     query = db.query(Anomalia)
@@ -125,7 +128,10 @@ def db_listar_anomalias(
         query = query.join(Transacao).filter(Transacao.tipo_transacao == tipo_transacao)
     if id_transacao is not None:
         query = query.filter(Anomalia.id_transacao == id_transacao)
-    return query.offset(skip).limit(limit).all()
+    query = query.offset(skip)
+    if limit is not None:
+        query = query.limit(limit)
+    return query.all()
 
 
 def db_buscar_anomalia_por_id(db: Session, anomalia_id: int) -> Anomalia:
