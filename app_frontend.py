@@ -194,7 +194,6 @@ def enriquecer_com_anomalias(transacoes: list, anomalias: list) -> pd.DataFrame:
     return df
 
 
-@st.cache_data(ttl=60, show_spinner=False)
 def carregar_dados_cache():
     transacoes = api_get("/transactions")
     anomalias = api_get("/anomalies")
@@ -210,21 +209,13 @@ def carregar_transacoes_filtradas(filtros: dict) -> pd.DataFrame:
     return enriquecer_com_anomalias(transacoes, anomalias)
 
 
-def obter_dados_alertas(df_base: pd.DataFrame, filtros: dict) -> pd.DataFrame:
+def obter_dados_alertas(filtros: dict) -> pd.DataFrame:
     """
-    1) Busca transações na API com os filtros escolhidos (conta, tipo, valor...).
+    1) Busca sempre as transações e anomalias atuais na API.
     2) Cruza com as anomalias do backend.
     3) Mantém só linhas com alerta e aplica filtros visuais (risco, motivo).
     """
-    tem_filtro_api = any([
-        filtros.get("conta"),
-        filtros.get("tipo_transacao"),
-        filtros.get("categoria"),
-        filtros.get("valor_minimo") is not None,
-        filtros.get("valor_maximo") is not None,
-    ])
-
-    df_trabalho = carregar_transacoes_filtradas(filtros) if tem_filtro_api else df_base.copy()
+    df_trabalho = carregar_transacoes_filtradas(filtros)
     df_alertas = df_trabalho[df_trabalho["tem_alerta"]].copy()
 
     if filtros.get("classificacao_risco"):
@@ -310,8 +301,7 @@ try:
         st.caption(f"Verificado às {datetime.now().strftime('%H:%M:%S')}")
 
         if st.button("🔄 Atualizar dados", use_container_width=True):
-            carregar_dados_cache.clear()
-            st.rerun()
+            st.experimental_rerun()
 
         with st.expander("📜 Regras de Negócio (resumo)"):
             try:
@@ -481,11 +471,11 @@ try:
                 "valor_minimo": None, "valor_maximo": None,
                 "classificacao_risco": "", "motivo_alerta": "",
             }
-            st.rerun()
+            st.experimental_rerun()
 
         st.caption(f"**Filtros ativos:** {descrever_filtros_ativos(st.session_state.filtros_alertas)}")
 
-        df_motivos = obter_dados_alertas(df, st.session_state.filtros_alertas)
+        df_motivos = obter_dados_alertas(st.session_state.filtros_alertas)
         total_alertas_filtrados = len(df_motivos)
         st.metric("Alertas encontrados com os filtros", total_alertas_filtrados)
 
@@ -613,20 +603,20 @@ try:
 
             st.write("#### 📝 Registro de Auditoria (Últimas Ocorrências)")
             colunas_analise = [
-                "data_hora", "conta", "tipo_transacao", "valor",
+                "data_analise_risco", "data_hora", "conta", "tipo_transacao", "valor",
                 "localizacao", "dispositivo", "risco_score", "classificacao_risco", "motivo_alerta",
             ]
             df_exibicao_fraudes = (
                 df_motivos[colunas_analise]
-                .sort_values(by="data_hora", ascending=False)
+                .sort_values(by="data_analise_risco", ascending=False)
                 .head(500)
             )
             st.dataframe(df_exibicao_fraudes, use_container_width=True)
 
             with st.expander("📚 Motivo completo retornado pelo backend"):
                 st.dataframe(
-                    df_motivos[["data_hora", "conta", "motivo_real", "risco_score", "classificacao_risco"]]
-                    .sort_values(by="data_hora", ascending=False).head(100),
+                    df_motivos[["data_analise_risco", "data_hora", "conta", "motivo_real", "risco_score", "classificacao_risco"]]
+                    .sort_values(by="data_analise_risco", ascending=False).head(100),
                     use_container_width=True,
                 )
 
@@ -751,7 +741,12 @@ try:
                             st.success("✅ Operação transmitida! O banco de dados consolidou o registro com sucesso.")
                             anomalia = buscar_anomalia_transacao(resultado["id_transacao"])
                             exibir_resultado_validacao(anomalia)
-                            carregar_dados_cache.clear()
+                            st.session_state.filtros_alertas = {
+                                "conta": "", "tipo_transacao": "", "categoria": "",
+                                "valor_minimo": None, "valor_maximo": None,
+                                "classificacao_risco": "", "motivo_alerta": "",
+                            }
+                            st.experimental_rerun()
                             if anomalia:
                                 st.balloons()
                         else:
