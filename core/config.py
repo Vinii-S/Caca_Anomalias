@@ -8,6 +8,7 @@ Data: 2026
 """
 
 import os
+from dotenv import load_dotenv
 
 # ---------------------------------------------------------------------------
 # Banco de dados
@@ -80,3 +81,11 @@ REGRAS_PADRAO = [
         "ativa": True,
     },
 ]
+# ---------------------------------------------------------------------------
+# Configurações da LLM
+# ---------------------------------------------------------------------------
+load_dotenv()  # Carrega variáveis do .env
+LLM_PROVIDER = "gemini"
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "CHAVE_NAO_ENCONTRADA") 
+GEMINI_MODEL = "gemini-2.5-flash"

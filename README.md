@@ -89,14 +89,9 @@ uvicorn main:app --reload
 
 ### 5. Iniciando Frontend
 ```bash
-stramlit run app_frontend.py
+streamlit run app_frontend.py
 ```
 O Frontend baseado em streamlit estará disponível no endereço: http://localhost:8501/
-
-
-A API (backend) estará disponível no endereço: http://127.0.0.1:8000
-
-Você pode acessar a documentação automática (Swagger UI) fornecida pelo FastAPI acessando: http://127.0.0.1:8000/docs   
 
 A API estará disponível no endereço: [http://127.0.0.1:8000](http://127.0.0.1:8000)
 

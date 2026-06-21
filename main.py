@@ -16,7 +16,7 @@ from models.models import Transacao, Anomalia, RegraFraude, TransacaoRegra  # no
 from controllers.transaction_controller import router as transaction_router
 from controllers.anomaly_controller import router as anomaly_router
 from repositories.data_repository import seed_regras, seed_transacoes
-
+from controllers.llm_controller import router as llm_router
 # Cria as 4 tabelas no banco se não existirem
 Base.metadata.create_all(bind=engine)
 
@@ -32,6 +32,7 @@ app = FastAPI(
 
 app.include_router(transaction_router)
 app.include_router(anomaly_router)
+app.include_router(llm_router)
 
 
 @app.on_event("startup")

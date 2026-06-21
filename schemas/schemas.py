@@ -139,3 +139,14 @@ class TransacaoRegraResponse(BaseModel):
 
     class Config:
         from_attributes = True
+        
+class ExplicacaoLLMResponse(BaseModel):
+    """Schema de saída para explicações de anomalias geradas por LLM."""
+
+    id_analise: int
+    id_transacao: int
+    risco_score: float
+    classificacao: str
+    motivo_original: str
+    modelo_llm: str
+    explicacao_llm: list[str]
